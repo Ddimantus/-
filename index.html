@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Climate Chart</title>
+
+    <style>
+        td {
+            text-align: left;
+        }
+        table, th, td {
+            border: 1px solid;
+        }
+        .Parent {
+            display: flex;
+            flex-direction: row;
+        }
+        .child1 {
+            width: 70%;
+            height: 100vh;
+            color: white;
+        }
+        .child2 {
+            width: 30%;
+            height: 100vh;
+        }
+        canvas{
+            width: 80% !important;
+            height: 80% !important;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+</head>
+<body>
+<div class="Parent">
+    <div class="child1">
+        <center>
+            <canvas id="climate-chart"></canvas>
+        </center>
+    </div>
+
+    <div class="child2">
+        <center>
+            <h3>Temperature</h3>
+            <!-- Таблица для отрисовки данных -->
+            <table id="my_data" cellpadding="7"></table>
+        </center>
+    </div>
+</div>
+
+<script>
+    const cityId = 21; // номер варианта
+
+    getData();
+    tableData();
+
+    async function loadJson() {
+        const response = await fetch('https://raw.githubusercontent.com/RFUNN/JSON_Data/main/climate.json');
+        const data = await response.json();          // массив городов
+        return data.find(c => c.id === cityId);      // город по id
+    }
+
+    async function getData() {
+        const city = await loadJson();
+
+        // climate.json использует поле monthlyAvg, а не months
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const labels = monthNames;
+        const highs  = city.monthlyAvg.map(m => m.high);
+        const lows   = city.monthlyAvg.map(m => m.low);
+
+        Chart.defaults.global.defaultFontStyle = 'bold';
+        Chart.defaults.global.defaultFontFamily = '"Lato",sans-serif';
+        Chart.defaults.global.defaultFontColor = "#000";
+        Chart.defaults.global.defaultFontSize = 12;
+
+        new Chart(document.getElementById("climate-chart"), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "High",
+                        borderColor: "red",
+                        backgroundColor: "rgba(255,0,0,0.1)",
+                        data: highs,
+                        fill: false
+                    },
+                    {
+                        label: "Low",
+                        borderColor: "blue",
+                        backgroundColor: "rgba(0,0,255,0.1)",
+                        data: lows,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                legend: { display: true },
+                title: {
+                    display: true,
+                    text: 'Temperature: ' + city.city
+                },
+				scales: {
+					yAxes: [{
+						ticks: {
+							min: 0,      // при желании можно изменить
+							max: 50      // верхняя граница оси Y
+						}
+					}]
+				}
+            }
+        });
+    }
+
+    async function tableData() {
+        const city = await loadJson();
+
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        let html = '<tr><th>Month</th><th>High</th><th>Low</th></tr>';
+
+        city.monthlyAvg.forEach((m, i) => {
+            html += `<tr>
+                        <td>${monthNames[i]}</td>
+                        <td>${m.high}</td>
+                        <td>${m.low}</td>
+                     </tr>`;
+        });
+
+        document.getElementById("my_data").innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
